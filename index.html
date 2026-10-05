@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simple Calculator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #e8edf3;
+    }
+
+    .calculator {
+      width: min(360px, 92vw);
+      padding: 20px;
+      border-radius: 22px;
+      background: #20242b;
+      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.25);
+    }
+
+    .display {
+      width: 100%;
+      height: 82px;
+      margin-bottom: 18px;
+      padding: 16px;
+      border: 0;
+      border-radius: 14px;
+      background: #f7f9fc;
+      color: #1b1f26;
+      text-align: right;
+      font-size: 2.2rem;
+      font-weight: bold;
+      outline: none;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    button {
+      min-height: 62px;
+      border: 0;
+      border-radius: 14px;
+      background: #3a404b;
+      color: white;
+      font-size: 1.35rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+    }
+
+    button:hover {
+      background: #505968;
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+
+    .operator {
+      background: #ff9500;
+    }
+
+    .operator:hover {
+      background: #e68600;
+    }
+
+    .clear {
+      background: #d9534f;
+    }
+
+    .clear:hover {
+      background: #be3f3b;
+    }
+
+    .equals {
+      background: #28a745;
+      grid-column: span 2;
+    }
+
+    .equals:hover {
+      background: #218838;
+    }
+
+    .zero {
+      grid-column: span 2;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="calculator">
+    <input
+      id="display"
+      class="display"
+      type="text"
+      value="0"
+      readonly
+      aria-label="Calculator display"
+    />
+
+    <section class="buttons">
+      <button class="clear" data-action="clear">AC</button>
+      <button data-action="sign">+/−</button>
+      <button data-action="percent">%</button>
+      <button class="operator" data-operator="÷">÷</button>
+
+      <button data-number="7">7</button>
+      <button data-number="8">8</button>
+      <button data-number="9">9</button>
+      <button class="operator" data-operator="×">×</button>
+
+      <button data-number="4">4</button>
+      <button data-number="5">5</button>
+      <button data-number="6">6</button>
+      <button class="operator" data-operator="-">−</button>
+
+      <button data-number="1">1</button>
+      <button data-number="2">2</button>
+      <button data-number="3">3</button>
+      <button class="operator" data-operator="+">+</button>
+
+      <button class="zero" data-number="0">0</button>
+      <button data-number=".">.</button>
+      <button class="equals" data-action="equals">=</button>
+    </section>
+  </main>
+
+  <script>
+    const display = document.getElementById("display");
+    let currentNumber = "0";
+    let previousNumber = null;
+    let operator = null;
+    let shouldResetDisplay = false;
+
+    function updateDisplay() {
+      display.value = currentNumber;
+    }
+
+    function calculate() {
+      const firstNumber = Number(previousNumber);
+      const secondNumber = Number(currentNumber);
+      let result = 0;
+
+      if (operator === "+") {
+        result = firstNumber + secondNumber;
+      } else if (operator === "-") {
+        result = firstNumber - secondNumber;
+      } else if (operator === "×") {
+        result = firstNumber * secondNumber;
+      } else if (operator === "÷") {
+        result = secondNumber === 0 ? "Error" : firstNumber / secondNumber;
+      }
+
+      if (result !== "Error") {
+        // Fix floating-point precision issues (e.g., 0.1 + 0.2)
+        currentNumber = String(parseFloat(result.toFixed(10)));
+      } else {
+        currentNumber = "Error";
+      }
+
+      previousNumber = null;
+      operator = null;
+      shouldResetDisplay = true;
+      updateDisplay();
+    }
+
+    function addNumber(number) {
+      if (currentNumber === "Error" || shouldResetDisplay) {
+        currentNumber = number === "." ? "0." : number;
+        shouldResetDisplay = false;
+      } else if (number === "." && !currentNumber.includes(".")) {
+        currentNumber += ".";
+      } else if (number !== "." && currentNumber === "0") {
+        currentNumber = number;
+      } else if (number !== ".") {
+        currentNumber += number;
+      }
+
+      updateDisplay();
+    }
+
+    function handleOperator(selectedOperator) {
+      if (operator && !shouldResetDisplay) {
+        calculate();
+      }
+
+      previousNumber = currentNumber;
+      operator = selectedOperator;
+      shouldResetDisplay = true;
+    }
+
+    document.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const number = button.dataset.number;
+        const selectedOperator = button.dataset.operator;
+        const action = button.dataset.action;
+
+        if (number !== undefined) {
+          addNumber(number);
+        }
+
+        if (selectedOperator) {
+          handleOperator(selectedOperator);
+        }
+
+        if (action === "clear") {
+          currentNumber = "0";
+          previousNumber = null;
+          operator = null;
+          shouldResetDisplay = false;
+          updateDisplay();
+        }
+
+        if (action === "sign" && currentNumber !== "0" && currentNumber !== "Error") {
+          currentNumber = String(Number(currentNumber) * -1);
+          updateDisplay();
+        }
+
+        if (action === "percent" && currentNumber !== "Error") {
+          currentNumber = String(parseFloat((Number(currentNumber) / 100).toFixed(10)));
+          updateDisplay();
+        }
+
+        if (action === "equals" && operator && previousNumber !== null) {
+          calculate();
+        }
+      });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if ("0123456789.".includes(event.key)) {
+        addNumber(event.key);
+      }
+
+      if (["+", "-", "*", "/"].includes(event.key)) {
+        const keyboardOperators = {
+          "*": "×",
+          "/": "÷",
+          "-": "−",
+          "+": "+"
+        };
+        handleOperator(keyboardOperators[event.key]);
+      }
+
+      if (event.key === "Enter" || event.key === "=") {
+        if (operator && previousNumber !== null) {
+          calculate();
+        }
+      }
+
+      if (event.key === "Escape") {
+        currentNumber = "0";
+        previousNumber = null;
+        operator = null;
+        shouldResetDisplay = false;
+        updateDisplay();
+      }
+    });
+  </script>
+</body>
+</html>
